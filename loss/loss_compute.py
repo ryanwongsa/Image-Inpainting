@@ -1,11 +1,12 @@
 import torch
 from models.vgg16_extractor import VGG16Extractor
+import torch.nn.functional as F
 
-class LossCompute(object)
-    def __init__(self, device="cuda"):
+class LossCompute(object):
+    def __init__(self, feature_extractor, device="cuda"):
         self.device = device
-        self.vgg_extractor = VGG16Extractor().to(self.device)
-        self.vgg_extractor.eval()
+        self.feature_extractor = feature_extractor
+        self.feature_extractor.eval()
 
     def gram_matrix(self, feature_matrix):
         (batch, channel, h, w) = feature_matrix.size()
@@ -17,7 +18,7 @@ class LossCompute(object)
     def loss_style(self, output, vgg_gt):
         loss = 0.0
         for o, g in zip(output, vgg_gt):
-           loss += self.l1(self.gram_matrix(o), self.gram_matrix(g))
+            loss += self.l1(self.gram_matrix(o), self.gram_matrix(g))
         return loss
 
     def l1(self, y_true, y_pred):
@@ -58,9 +59,9 @@ class LossCompute(object)
         def loss(y_true, y_pred):
             y_comp = mask * y_true + (1-mask) * y_pred
 
-            vgg_out = self.vgg_extractor(y_pred)
-            vgg_gt = self.vgg_extractor(y_true)
-            vgg_comp = self.vgg_extractor(y_comp)
+            vgg_out = self.feature_extractor(y_pred)
+            vgg_gt = self.feature_extractor(y_true)
+            vgg_comp = self.feature_extractor(y_comp)
 
             l1 = self.loss_valid(mask, y_true, y_pred)
             l2 = self.loss_hole(mask, y_true, y_pred)

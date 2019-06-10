@@ -23,9 +23,9 @@ class MaskGenerator():
             rand = np.random.randint(-180, 180)
             M = cv2.getRotationMatrix2D((mask.shape[1]/2, mask.shape[0]/2), rand, 1.5)
             mask = cv2.warpAffine(mask, M, (mask.shape[1], mask.shape[0]))
-            
+
         if dilation:
-            rand = np.random.randint(5, 47)
+            rand = np.random.randint(5, 49)
             kernel = np.ones((rand, rand), np.uint8) 
             mask = cv2.erode(mask, kernel, iterations=1)
 

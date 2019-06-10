@@ -5,7 +5,7 @@ from models.pconv_decoder import PConvDecoder
 from models.pconv_encoder import PConvEncoder
 
 class PConvUNet(nn.Module):
-    def __init__(self, channels):
+    def __init__(self, channels=3):
         super(PConvUNet, self).__init__()
         self.encoder1 = PConvEncoder(channels, 64, 7, bn=False)
         self.encoder2 = PConvEncoder(64, 128, 5)

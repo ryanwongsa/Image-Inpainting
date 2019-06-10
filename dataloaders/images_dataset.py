@@ -2,9 +2,9 @@ import torch
 import torchvision
 from glob import glob
 from torch.utils.data import Dataset, DataLoader
+from PIL import Image, ImageFile
+
 import os
-from PIL import Image
-from PIL import ImageFile
 import copy
 import numpy as np
 
