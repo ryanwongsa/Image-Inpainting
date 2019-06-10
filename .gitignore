@@ -124,3 +124,5 @@ dmypy.json
 .pyre/
 
 dataset/
+masks/
+saved_models/

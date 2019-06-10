@@ -30,7 +30,7 @@ class LossCompute(object):
             raise "ERROR Calculating l1 loss"
             
     def PSNR(self, y_true, y_pred):
-        return - 10.0 * torch.log(torch.mean((y_pred - y_true)**2)) / torch.log(torch.tensor(10.0, dtype=torch.float)) 
+        return - 10.0 * torch.log(torch.mean((y_pred - y_true)**2)) / torch.log(torch.tensor(10.0, dtype=torch.float, requires_grad=False)) 
       
     def loss_perceptual(self, vgg_out, vgg_gt, vgg_comp): 
         loss = 0
@@ -39,10 +39,10 @@ class LossCompute(object):
         return loss
       
     def loss_tv(self, mask, y_comp):
-        kernel = torch.ones((3, 3, mask.shape[1], mask.shape[1])).to(self.device)
+        kernel = torch.ones((3, 3, mask.shape[1], mask.shape[1]), requires_grad=False).to(self.device)
         dilated_mask = F.conv2d(1-mask, kernel, padding=1)
 
-        dilated_mask = torch.tensor(dilated_mask> 0, dtype=torch.float).to(self.device)
+        dilated_mask = torch.tensor(dilated_mask> 0, dtype=torch.float, requires_grad=False).to(self.device)
         P = dilated_mask * y_comp
 
         a = self.l1(P[:,:,:,1:], P[:,:,:,:-1])
