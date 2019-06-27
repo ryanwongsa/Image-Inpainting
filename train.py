@@ -23,7 +23,7 @@ LR = 0.0002
 
 preprocess = Preprocessor(DEVICE)
 
-SAVED_PATH = sys.argv[1] #"saved_models/2019-06-10-22-50/"
+SAVED_PATH = sys.argv[1] #"saved_models/2019-06-12-22-06/" 
 
 mask_generator = MaskGenerator("dataset/irregular_mask/disocclusion_img_mask/", HEIGHT,WIDTH, invert_mask=False) 
 pConvUNet = PConvUNet()
@@ -34,7 +34,7 @@ vgg16extractor = VGG16Extractor().to(DEVICE)
 lossCompute = LossCompute(vgg16extractor, device=DEVICE)
 
 dataset = ImagesDataset("dataset/train",HEIGHT, WIDTH, mask_generator)
-dataloader = DataLoader(dataset, batch_size=8, shuffle=True, num_workers=2)
+dataloader = DataLoader(dataset, batch_size=6, shuffle=True, num_workers=2)
 
 date_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 save_dir = "saved_models/"+date_time+"/"
