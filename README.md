@@ -11,16 +11,26 @@ A PyTorch Implmentation of the paper, [Image Inpainting for Irregular Holes Usin
 3. conda install pip
 4. conda install pytorch torchvision cudatoolkit=9.2 -c pytorch -c defaults -c numba/label/dev
 5. conda install jupyter
-6. pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/9.0 nvidia-dali
+<!-- TODO: Use nvidia dali dataloader for faster data loading -->
+<!-- 6. pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/9.0 nvidia-dali -->
 7. pip install pytorch-lightning
 8. conda install -c menpo opencv
 
 
-## Limitations
+## Training the model
 
-Trained on Open Images dataset for 5 days. Requires more 4 more days of training and 1 day of fine tuning (around $300 of GCP credit).
+### Training from scratch
 
-Latest model available [here](https://drive.google.com/drive/folders/1FgRREp38REeVGc1FVAoFThS1IUWGvbeB?usp=sharing).
+```
+python main.py --mask_dir <mask_dir> --train_dir <train_dir> --valid_dir <valid_dir>
+```
+
+### Continue from pretrained model
+
+Example:
+```
+python main.py --version version_10 --checkpoint_name _ckpt_epoch_4.ckpt
+```
 
 ## References
 
