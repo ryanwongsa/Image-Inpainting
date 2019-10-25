@@ -2,6 +2,8 @@
 
 A PyTorch Implmentation of the paper, [Image Inpainting for Irregular Holes Using Partial Convolutions](https://arxiv.org/pdf/1804.07723.pdf). Architecture may not be an exact match of due to the limited description of hyperparameters and architecture details.
 
+See `lightning` branch for latest developments in generalising the training and monitoring process.
+
 ## Limitations
 
 Trained on Open Images dataset for 5 days. Requires more 4 more days of training and 1 day of fine tuning (around $300 of GCP credit).
