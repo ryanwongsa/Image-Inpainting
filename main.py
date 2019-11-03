@@ -17,8 +17,8 @@ def main(hparams):
         model = ImageInpaintingSystem(hparams)
     else:
         model = ImageInpaintingSystem.load_from_metrics(
-            weights_path='lightning_logs/'+hparams.version+"/checkpoints/"+ hparams.checkpoint_name,
-            tags_csv='lightning_logs/'+hparams.version+'/meta_tags.csv'
+            weights_path=hparams.logs_dir+"/checkpoints/"+ hparams.checkpoint_name,
+            tags_csv=hparams.logs_dir+'/meta_tags.csv'
         )
 
 
@@ -31,7 +31,8 @@ def main(hparams):
     trainer = Trainer(
         gpus=num_gpus,
         train_percent_check=hparams.train_percent_check, 
-        use_amp=hparams.use_16bit
+        use_amp=hparams.use_16bit,
+        default_save_path=hparams.save_path
     )
 
     # ------------------------
@@ -61,7 +62,17 @@ if __name__ == '__main__':
     )
     
     parent_parser.add_argument(
+        '--logs_dir',
+        type=str
+    )
+    
+    parent_parser.add_argument(
         '--checkpoint_name',
+        type=str
+    )
+    
+    parent_parser.add_argument(
+        '--save_path',
         type=str
     )
     

@@ -1,6 +1,7 @@
 import torch
 import torchvision
 from glob import glob
+from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image, ImageFile
 
@@ -15,7 +16,8 @@ class ImagesDataset(Dataset):
         self.root_dir = root_dir
         self.transform = transform
         self.height, self.width = height, width
-        self.list_images = glob(os.path.join(self.root_dir, '*.jpg'))
+#         self.list_images = glob(os.path.join(self.root_dir, '*.jpg'))
+        self.list_imags = list(Path(self.root_dir).rglob('*.jpg'))
         self.mask_generator = mask_generator
                                 
     def __len__(self):
