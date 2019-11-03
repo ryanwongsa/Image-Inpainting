@@ -17,7 +17,7 @@ class ImagesDataset(Dataset):
         self.transform = transform
         self.height, self.width = height, width
 #         self.list_images = glob(os.path.join(self.root_dir, '*.jpg'))
-        self.list_imags = list(Path(self.root_dir).rglob('*.jpg'))
+        self.list_images = list(Path(self.root_dir).rglob('*.jpg'))
         self.mask_generator = mask_generator
                                 
     def __len__(self):
@@ -25,6 +25,7 @@ class ImagesDataset(Dataset):
 
     def __getitem__(self, idx):
         image_loc = self.list_images[idx]
+#         print(image_loc)
         image = np.array(Image.open(image_loc).convert('RGB').resize((self.width, self.height))) / 255
         
         mask = self.mask_generator.sample()

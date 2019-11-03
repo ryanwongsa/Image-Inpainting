@@ -13,7 +13,7 @@ def main(hparams):
     # 1 INIT LIGHTNING MODEL
     # ------------------------
     
-    if hparams.version is None:
+    if hparams.logs_dir is None:
         model = ImageInpaintingSystem(hparams)
     else:
         model = ImageInpaintingSystem.load_from_metrics(
@@ -50,14 +50,9 @@ if __name__ == '__main__':
     parent_parser = ArgumentParser(add_help=False)
     
     parent_parser.add_argument(
-        '--version',
-        type=str
-    )
-    
-    parent_parser.add_argument(
         '--train_percent_check',
         type=float,
-        default=0.001,
+        default=1.0,
         help='how many gpus'
     )
     
