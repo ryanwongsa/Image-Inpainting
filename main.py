@@ -9,10 +9,6 @@ def main(hparams):
     Main training routine specific for this project
     :param hparams:
     """
-    # ------------------------
-    # 1 INIT LIGHTNING MODEL
-    # ------------------------
-    
     if hparams.logs_dir is None:
         model = ImageInpaintingSystem(hparams)
     else:
@@ -21,31 +17,20 @@ def main(hparams):
             tags_csv=hparams.logs_dir+'/meta_tags.csv'
         )
 
-
-    # ------------------------
-    # 2 INIT TRAINER
-    # ------------------------
-    
     num_gpus = 1
     
     trainer = Trainer(
-        gpus=num_gpus,
+        gpus=1,
         train_percent_check=hparams.train_percent_check, 
+        val_check_interval=hparams.val_check_interval,
         use_amp=hparams.use_16bit,
         default_save_path=hparams.save_path
     )
 
-    # ------------------------
-    # 3 START TRAINING
-    # ------------------------
     trainer.fit(model)
 
 
 if __name__ == '__main__':
-    # ------------------------
-    # TRAINING ARGUMENTS
-    # ------------------------
-    # these are project-wide arguments
     root_dir = os.path.dirname(os.path.realpath(__file__))
     parent_parser = ArgumentParser(add_help=False)
     
@@ -53,7 +38,12 @@ if __name__ == '__main__':
         '--train_percent_check',
         type=float,
         default=1.0,
-        help='how many gpus'
+    )
+    
+    parent_parser.add_argument(
+        '--val_check_interval',
+        type=float,
+        default=0.05,
     )
     
     parent_parser.add_argument(
@@ -81,7 +71,4 @@ if __name__ == '__main__':
     parser = ImageInpaintingSystem.add_model_specific_args(parent_parser, root_dir)
     hyperparams = parser.parse_args()
 
-    # ---------------------
-    # RUN TRAINING
-    # ---------------------
     main(hyperparams)
