@@ -62,7 +62,7 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.logger.experiment.add_scalars('loss/train',dict_losses_train, self.global_step)
         self.logger.experiment.add_scalars('loss/overview',{'train_loss': loss}, self.global_step)
         
-        return {'loss': loss,'progress_bar': {'train_loss': loss}} #,  'log': {'train_loss': loss}}
+        return {'loss': loss,'progress_bar': {'train_loss': loss},  'log': {'train_loss': loss}}
 
     def validation_step(self, batch, batch_nb):
         masked_img, mask, image = batch
@@ -111,8 +111,8 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.logger.experiment.add_scalars('loss/valid',valid_dict, self.global_step)
         self.logger.experiment.add_scalars('loss/overview',{'valid_loss': avg_loss}, self.global_step)
 
-        tqdm_dict = {'valid_psnr': avg_psnr.item(), 'val_loss': avg_loss.item()}
-        return {'val_loss':avg_loss, 'progress_bar': tqdm_dict}
+        tqdm_dict = {'valid_psnr': avg_psnr, 'val_loss': avg_loss}
+        return {'val_loss':avg_loss, 'progress_bar': tqdm_dict, 'log': tqdm_dict}
     
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
