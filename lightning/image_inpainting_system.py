@@ -112,7 +112,7 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.logger.experiment.add_scalars('loss/overview',{'valid_loss': avg_loss}, self.global_step)
 
         tqdm_dict = {'valid_psnr': avg_psnr.item(), 'val_loss': avg_loss.item()}
-        return {'progress_bar': tqdm_dict, 'log': {'val_loss':avg_loss.item()}}
+        return {'val_loss':avg_loss, 'progress_bar': tqdm_dict}
     
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
