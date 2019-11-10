@@ -111,7 +111,7 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.logger.experiment.add_scalars('loss/valid',valid_dict, self.global_step)
         self.logger.experiment.add_scalars('loss/overview',{'valid_loss': avg_loss}, self.global_step)
 
-        tqdm_dict = {'valid_psnr': avg_psnr, 'valid_loss': avg_loss}
+        tqdm_dict = {'valid_psnr': avg_psnr, 'val_loss': avg_loss}
         return {'progress_bar': tqdm_dict, 'log': tqdm_dict}
     
     def configure_optimizers(self):
