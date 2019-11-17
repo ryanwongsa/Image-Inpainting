@@ -55,21 +55,29 @@ class LossCompute(object):
     def loss_valid(self, mask, y_true, y_pred):
         return self.l1(mask * y_true, mask * y_pred)
       
-    def loss_total(self, mask):
+    def loss_total(self, mask, loss_factors):
         def loss(y_true, y_pred):
             y_comp = mask * y_true + (1-mask) * y_pred
 
             vgg_out = self.feature_extractor(y_pred)
             vgg_gt = self.feature_extractor(y_true)
             vgg_comp = self.feature_extractor(y_comp)
+            
+            loss_hole = (self.loss_hole(mask, y_true, y_pred) * loss_factors["loss_hole"]).mean()
+            loss_valid = (self.loss_valid(mask, y_true, y_pred) * loss_factors["loss_valid"]).mean()
+            loss_perceptual = (self.loss_perceptual(vgg_out, vgg_gt, vgg_comp) * loss_factors["loss_perceptual"]).mean()
+            
+            loss_style_out = (self.loss_style(vgg_out, vgg_gt) * loss_factors["loss_style_out"]).mean()
+            loss_style_comp = (self.loss_style(vgg_comp, vgg_gt) * loss_factors["loss_style_comp"]).mean()
+            loss_tv = (self.loss_tv(mask, y_comp) * loss_factors["loss_tv"]).mean()
 
-            l1 = self.loss_valid(mask, y_true, y_pred)
-            l2 = self.loss_hole(mask, y_true, y_pred)
-            l3 = self.loss_perceptual(vgg_out, vgg_gt, vgg_comp)
-            l4 = self.loss_style(vgg_out, vgg_gt)
-            l5 = self.loss_style(vgg_comp, vgg_gt)
-            l6 = self.loss_tv(mask, y_comp)
-
-            return l1 + 6*l2 + 0.05*l3 + 120*(l4+l5) + 0.1*l6
+            return (loss_valid + loss_hole +loss_perceptual +loss_style_out+loss_style_comp + loss_tv), {
+                "loss_hole": loss_hole, 
+                "loss_valid": loss_valid,
+                "loss_perceptual": loss_perceptual,
+                "loss_style_out": loss_style_out,
+                "loss_style_comp": loss_style_comp,
+                "loss_tv": loss_tv
+            }
 
         return loss
