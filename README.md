@@ -3,41 +3,64 @@
 A PyTorch Implmentation of the paper, [Image Inpainting for Irregular Holes Using Partial Convolutions](https://arxiv.org/pdf/1804.07723.pdf). Architecture may not be an exact match of due to the limited description of hyperparameters and architecture details.
 
 ## Instructions
-=======
-See `lightning` branch for latest developments in generalising the training and monitoring process.
 
-1. conda create -n imageinpaintingenv
-
+1. conda env create -f imageinpaintingenv.yml
 2. source activate imageinpaintingenv
 
-3. conda install pip
-4. conda install pytorch torchvision cudatoolkit=9.2 -c pytorch -c defaults -c numba/label/dev
-5. conda install jupyter
 <!-- TODO: Use nvidia dali dataloader for faster data loading -->
 <!-- 6. pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/9.0 nvidia-dali -->
-7. pip install pytorch-lightning
-8. conda install -c menpo opencv
+<!-- pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/10.0 nvidia-dali -->
 
 
 ## Training the model
 
+Use command below for more parameter details.
+```cmd
+python main.py -h
+```
+
 ### Training from scratch
 
-```
-python main.py --mask_dir <mask_dir> --train_dir <train_dir> --valid_dir <valid_dir>
+```cmd
+python main.py \
+    --train_dir "/content/data/train" \
+    --valid_dir "/content/data/test" \
+    --mask_dir "/content/data/irregular_mask/disocclusion_img_mask" \
+    --height 512 \
+    --width 512 \
+    --num_workers 2 \
+    --learning_rate 0.0002 \
+    --train_percent_check 1.0 \
+    --val_check_interval 1.0 \
+    --batch_size 6 \
+    --save_path "/content/data/logs" \
+
 ```
 
 ### Continue from pretrained model
 
-Example:
-```
-python main.py --version version_10 --checkpoint_name _ckpt_epoch_4.ckpt
+```cmd
+python main.py \
+    --logs_dir "/content/data/logs/lightning_logs/version_1" \
+    --checkpoint_name "_ckpt_epoch_1.ckpt" \
+    --train_dir "/content/data/train" \
+    --valid_dir "/content/data/test" \
+    --mask_dir "/content/data/irregular_mask/disocclusion_img_mask" \
+    --height 512 \
+    --width 512 \
+    --num_workers 2 \
+    --learning_rate 0.0002 \
+    --train_percent_check 1.0 \
+    --val_check_interval 1.0 \
+    --batch_size 6 \
+    --save_path "/content/data/logs"
 ```
 
 ## References
 
-- Partial Conv: https://github.com/NVIDIA/partialconv
-- Keras Implementation: https://github.com/MathiasGruber/PConv-Keras
+- [Partial Conv](https://github.com/NVIDIA/partialconv)
+- [Keras Implementation](https://github.com/MathiasGruber/PConv-Keras)
+- [Image Inpainting for Irregular Holes Using Partial Convolutions](https://arxiv.org/pdf/1804.07723.pdf)
 
 ## TODO
 
