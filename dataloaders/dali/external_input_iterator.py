@@ -9,13 +9,14 @@ import random
 from pathlib import Path
 
 class ExternalInputIterator(object):
-    def __init__(self, image_dir, mask_dir, batch_size):
+    def __init__(self, image_dir, mask_dir, batch_size, isShuffle=True):
         self.images_dir = image_dir
         self.mask_dir = mask_dir
         self.batch_size = batch_size
         self.image_files = list(Path(self.images_dir).rglob('*.jpg'))
         self.mask_files = list(Path(self.mask_dir).rglob('*.png'))
-        shuffle(self.image_files)
+        if isShuffle:
+            shuffle(self.image_files)
         shuffle(self.mask_files)
 
         self.data_set_len = len(self.image_files)

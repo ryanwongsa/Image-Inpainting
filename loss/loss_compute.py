@@ -1,12 +1,12 @@
 import torch
-from models.vgg16_extractor import VGG16Extractor
 import torch.nn.functional as F
 
 class LossCompute(object):
-    def __init__(self, feature_extractor, device="cuda"):
+    def __init__(self, feature_extractor, loss_factors, device="cuda"):
         self.device = device
         self.feature_extractor = feature_extractor
         self.feature_extractor.eval()
+        self.loss_factors = loss_factors
 
     def gram_matrix(self, feature_matrix):
         (batch, channel, h, w) = feature_matrix.size()
@@ -55,7 +55,7 @@ class LossCompute(object):
     def loss_valid(self, mask, y_true, y_pred):
         return self.l1(mask * y_true, mask * y_pred)
       
-    def loss_total(self, mask, loss_factors):
+    def loss_total(self, mask):
         def loss(y_true, y_pred):
             y_comp = mask * y_true + (1-mask) * y_pred
 
@@ -63,13 +63,13 @@ class LossCompute(object):
             vgg_gt = self.feature_extractor(y_true)
             vgg_comp = self.feature_extractor(y_comp)
             
-            loss_hole = (self.loss_hole(mask, y_true, y_pred) * loss_factors["loss_hole"]).mean()
-            loss_valid = (self.loss_valid(mask, y_true, y_pred) * loss_factors["loss_valid"]).mean()
-            loss_perceptual = (self.loss_perceptual(vgg_out, vgg_gt, vgg_comp) * loss_factors["loss_perceptual"]).mean()
+            loss_hole = (self.loss_hole(mask, y_true, y_pred) * self.loss_factors["loss_hole"]).mean()
+            loss_valid = (self.loss_valid(mask, y_true, y_pred) * self.loss_factors["loss_valid"]).mean()
+            loss_perceptual = (self.loss_perceptual(vgg_out, vgg_gt, vgg_comp) * self.loss_factors["loss_perceptual"]).mean()
             
-            loss_style_out = (self.loss_style(vgg_out, vgg_gt) * loss_factors["loss_style_out"]).mean()
-            loss_style_comp = (self.loss_style(vgg_comp, vgg_gt) * loss_factors["loss_style_comp"]).mean()
-            loss_tv = (self.loss_tv(mask, y_comp) * loss_factors["loss_tv"]).mean()
+            loss_style_out = (self.loss_style(vgg_out, vgg_gt) * self.loss_factors["loss_style_out"]).mean()
+            loss_style_comp = (self.loss_style(vgg_comp, vgg_gt) * self.loss_factors["loss_style_comp"]).mean()
+            loss_tv = (self.loss_tv(mask, y_comp) * self.loss_factors["loss_tv"]).mean()
 
             return (loss_valid + loss_hole +loss_perceptual +loss_style_out+loss_style_comp + loss_tv), {
                 "loss_hole": loss_hole, 
