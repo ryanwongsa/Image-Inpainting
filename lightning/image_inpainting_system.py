@@ -12,6 +12,7 @@ from models.vgg16_extractor import VGG16Extractor
 from loss.loss_compute import LossCompute
 
 from argparse import ArgumentParser
+from utils import unnormalize
 
 class ImageInpaintingSystem(pl.LightningModule):
 
@@ -39,12 +40,13 @@ class ImageInpaintingSystem(pl.LightningModule):
         return self.pConvUNet(masked_img_tensor, mask_tensor)
 
     def training_step(self, batch, batch_nb):
-        images, masks = batch
+        images = batch[0]["images"]
+        masks = batch[0]["masks"]
         masked_images = masks*images
 
-        ls_fn = self.lossCompute.loss_total(mask_tensor)
-        output = self.forward(masked_img_tensor, mask_tensor)
-        loss, dict_losses = ls_fn(img_tensor, output)
+        ls_fn = self.lossCompute.loss_total(masks)
+        output = self.forward(masked_images, masks)
+        loss, dict_losses = ls_fn(images, output)
 
         dict_losses_train = {}
         for key, value in dict_losses.items():
@@ -56,23 +58,23 @@ class ImageInpaintingSystem(pl.LightningModule):
         return {'loss': loss,'progress_bar': {'train_loss': loss}}
 
     def validation_step(self, batch, batch_nb):
-        masked_img, mask, image = batch
         
-        img_tensor = self.preprocess.normalize(image.type(torch.float))
-        mask_tensor = mask.type(torch.float).transpose(1, 3)
-        masked_img_tensor = self.preprocess.normalize(masked_img.type(torch.float))
-        
-        ls_fn = self.lossCompute.loss_total(mask_tensor)
-        output = self.forward(masked_img_tensor, mask_tensor)
-        loss, dict_losses = ls_fn(img_tensor, output)
-        
-        psnr = self.lossCompute.PSNR(img_tensor, output)
+        images = batch[0]["images"]
+        masks = batch[0]["masks"]
+        masked_images = masks*images
+    
+        ls_fn = self.lossCompute.loss_total(masks)
+        output = self.forward(masked_images, masks)
+        loss, dict_losses = ls_fn(images, output)
+
+        psnr = self.lossCompute.PSNR(images, output)
         if batch_nb == 0:
-            res = np.clip(self.preprocess.unnormalize(output).detach().cpu().numpy(),0,1)
-            original_img = np.clip(self.preprocess.unnormalize(masked_img_tensor).detach().cpu().numpy(),0,1)
+            res = np.clip(unnormalize(output.detach().cpu().numpy()),0,1)
+            original_img = np.clip(unnormalize(masked_images.detach().cpu().numpy()),0,1)
+            target_img = np.clip(unnormalize(images.detach().cpu().numpy()),0,1)
             combined_imgs = []
-            for i in range(image.shape[0]):
-                combined_img = np.concatenate((original_img[i], res[i], image[i].detach().cpu().numpy()), axis=1)
+            for i in range(images.shape[0]):
+                combined_img = np.concatenate((original_img[i], res[i], target_img[i]), axis=1)
                 combined_imgs.append(combined_img)
             combined_imgs = np.concatenate(combined_imgs)
             self.logger.experiment.add_image('images', combined_imgs, dataformats='HWC') 
@@ -103,8 +105,8 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.logger.experiment.add_scalars('loss/overview',{'valid_loss': avg_loss}, self.global_step)
 
         tqdm_dict = {'valid_psnr': avg_psnr, 'val_loss': avg_loss}
-        self.val_dataloader().reset()
 
+        self.val_dataloader()[0].reset()
         return {'val_loss':avg_loss, 'progress_bar': tqdm_dict}
     
     def configure_optimizers(self):
@@ -113,9 +115,9 @@ class ImageInpaintingSystem(pl.LightningModule):
     @pl.data_loader
     def train_dataloader(self):
         eii = ExternalInputIterator(self.hparams.train_dir, self.hparams.mask_dir, self.hparams.batch_size, isShuffle=True)
-        pipe = ExternalSourcePipeline(batch_size=batch_size, num_threads=self.hparams.num_workers, device_id = 0,
+        pipe = ExternalSourcePipeline(batch_size=self.hparams.batch_size, num_threads=self.hparams.num_workers, device_id = 0,
             external_data = eii, exec_async=False, exec_pipelined=False)
-        dataloader = LightningDaliDataloader(pipe, eii.size, last_batch_padded=False, fill_last_batch=True, output_map=["images", "masks"])
+        dataloader = LightningDaliDataloader(pipe, eii.size, self.hparams.batch_size, last_batch_padded=False, fill_last_batch=True, output_map=["images", "masks"])
         return dataloader
     
     def on_epoch_end(self):
@@ -124,9 +126,9 @@ class ImageInpaintingSystem(pl.LightningModule):
     @pl.data_loader
     def val_dataloader(self):
         eii = ExternalInputIterator(self.hparams.valid_dir, self.hparams.mask_dir, self.hparams.batch_size, isShuffle=False)
-        pipe = ExternalSourcePipeline(batch_size=batch_size, num_threads=self.hparams.num_workers, device_id = 0,
+        pipe = ExternalSourcePipeline(batch_size=self.hparams.batch_size, num_threads=self.hparams.num_workers, device_id = 0,
             external_data = eii, exec_async=False, exec_pipelined=False)
-        dataloader = LightningDaliDataloader(pipe, eii.size, last_batch_padded=False, fill_last_batch=True, output_map=["images", "masks"])
+        dataloader = LightningDaliDataloader(pipe, eii.size, self.hparams.batch_size, last_batch_padded=True, fill_last_batch=True, output_map=["images", "masks"])
         return dataloader
     
     @staticmethod
