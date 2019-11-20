@@ -9,6 +9,6 @@ class LightningDaliDataloader(PyTorchIterator):
 
     def __len__(self):
         if self.last_batch_padded:
-          return self.dataset_size//self.batch_size
+            return math.ceil(self.dataset_size/self.batch_size)
         else:
-          return math.ceil(self.dataset_size/self.batch_size)
+            return self.dataset_size//self.batch_size
