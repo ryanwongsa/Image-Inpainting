@@ -2,9 +2,10 @@
 
 A PyTorch Implmentation of the paper, [Image Inpainting for Irregular Holes Using Partial Convolutions](https://arxiv.org/pdf/1804.07723.pdf). Architecture may not be an exact match of due to the limited description of hyperparameters and architecture details.
 
+
 ## Instructions
-=======
-See `lightning` branch for latest developments in generalising the training and monitoring process.
+
+See `dali_dataloader` branch for latest developments in using NVIDIA Dali for faster dataloading.
 
 1. conda create -n imageinpaintingenv
 
