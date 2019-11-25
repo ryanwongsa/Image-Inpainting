@@ -4,13 +4,32 @@ A PyTorch Implmentation of the paper, [Image Inpainting for Irregular Holes Usin
 
 ## Instructions
 
+```
 1. conda env create -f imageinpaintingenv.yml
 2. source activate imageinpaintingenv
+3. pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/10.0 nvidia-dali
+```
 
-<!-- TODO: Use nvidia dali dataloader for faster data loading -->
-<!-- 6. pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/9.0 nvidia-dali -->
-<!-- pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/10.0 nvidia-dali -->
+## Results
 
+Currently results shows training done on the Goolge Landmark v2 Dataset on a single P100 GPU.
+
+> Note: Training for these results were only for 4.5 hours, while original paper trained the model on a V100 GPU for 10 days.
+
+
+### Example Results (so far)
+
+- 4.5 Hours of Training
+- tv loss is very low at the moment, might need to increase the scaling factor.
+- highest loss is style out.
+
+![Example Images](res/sample_training.JPG)
+
+### Validation Set
+
+![Example Images](res/individualimage.png)
+
+> Currently optimizing training and hyperparameters before training for full duration longer.
 
 ## Training the model
 
@@ -26,14 +45,9 @@ python main.py \
     --train_dir "/content/data/train" \
     --valid_dir "/content/data/test" \
     --mask_dir "/content/data/irregular_mask/disocclusion_img_mask" \
-    --height 512 \
-    --width 512 \
-    --num_workers 2 \
-    --learning_rate 0.0002 \
+    --save_path "/content/gdrive/My Drive/image-inpainting" \
     --train_percent_check 1.0 \
-    --val_check_interval 1.0 \
-    --batch_size 6 \
-    --save_path "/content/data/logs" \
+    --val_check_interval 0.5
 
 ```
 
@@ -41,19 +55,14 @@ python main.py \
 
 ```cmd
 python main.py \
-    --logs_dir "/content/data/logs/lightning_logs/version_1" \
-    --checkpoint_name "_ckpt_epoch_1.ckpt" \
+    --version_number 1 \
+    --checkpoint_dir "/content/gdrive/My Drive/image-inpainting/default/version_0/checkpoints/_ckpt_epoch_2.ckpt" \
     --train_dir "/content/data/train" \
     --valid_dir "/content/data/test" \
     --mask_dir "/content/data/irregular_mask/disocclusion_img_mask" \
-    --height 512 \
-    --width 512 \
-    --num_workers 2 \
-    --learning_rate 0.0002 \
+    --save_path "/content/gdrive/My Drive/image-inpainting" \
     --train_percent_check 1.0 \
-    --val_check_interval 1.0 \
-    --batch_size 6 \
-    --save_path "/content/data/logs"
+    --val_check_interval 0.5
 ```
 
 ## References
@@ -69,6 +78,7 @@ python main.py \
 - [x] Save the model to an external location
 - [x] Document code
 - [ ] Train for full duration
-- [ ] Update dataloader to use nvidia-dali
-- [ ] Refactor code to use pytorch-lightning
+- [ ] Add mixed precision support
+- [x] Update dataloader to use nvidia-dali
+- [x] Refactor code to use pytorch-lightning
 - [ ] Create Colab prediction implementation
