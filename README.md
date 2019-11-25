@@ -28,7 +28,7 @@ Currently results shows training done on the Goolge Landmark v2 Dataset on a sin
 
 ### Validation Set
 
-![Example Images](res/individualimage.png)
+![Example Images](res/individualImage.png)
 
 > Currently optimizing training and hyperparameters before training for full duration longer.
 
