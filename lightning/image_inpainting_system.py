@@ -1,21 +1,18 @@
 import numpy as np
-from PIL import Image
 import os
 import torch
 import pytorch_lightning as pl
 
-from dataloaders.mask_generator import MaskGenerator
-from dataloaders.images_dataset import ImagesDataset
-from torch.utils.data import DataLoader
+from dataloaders.dali import ExternalInputIterator, ExternalSourcePipeline, LightningDaliDataloader
+from nvidia.dali.plugin.pytorch import DALIGenericIterator as PyTorchIterator
 
 from models.pconv_unet import PConvUNet
 from models.vgg16_extractor import VGG16Extractor
 
 from loss.loss_compute import LossCompute
 
-from utils.preprocessing import Preprocessor
-
 from argparse import ArgumentParser
+from utils import unnormalize
 
 class ImageInpaintingSystem(pl.LightningModule):
 
@@ -37,23 +34,19 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.vgg16extractor = VGG16Extractor().to("cuda")
         for param in self.vgg16extractor.parameters():
             param.requires_grad = False
-        self.lossCompute = LossCompute(self.vgg16extractor, device="cuda")
-        
-        self.preprocess = Preprocessor("cuda")
+        self.lossCompute = LossCompute(self.vgg16extractor, self.loss_factors, device="cuda")
 
     def forward(self, masked_img_tensor, mask_tensor):
         return self.pConvUNet(masked_img_tensor, mask_tensor)
 
     def training_step(self, batch, batch_nb):
-        masked_img, mask, image  = batch
-        
-        img_tensor = self.preprocess.normalize(image.type(torch.float))
-        mask_tensor = mask.type(torch.float).transpose(1, 3)
-        masked_img_tensor = self.preprocess.normalize(masked_img.type(torch.float))
-        
-        ls_fn = self.lossCompute.loss_total(mask_tensor, self.loss_factors)
-        output = self.forward(masked_img_tensor, mask_tensor)
-        loss, dict_losses = ls_fn(img_tensor, output)
+        images = batch[0]["images"]
+        masks = batch[0]["masks"]
+        masked_images = masks*images
+
+        ls_fn = self.lossCompute.loss_total(masks)
+        output = self.forward(masked_images, masks)
+        loss, dict_losses = ls_fn(images, output)
 
         dict_losses_train = {}
         for key, value in dict_losses.items():
@@ -62,26 +55,26 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.logger.experiment.add_scalars('loss/train',dict_losses_train, self.global_step)
         self.logger.experiment.add_scalars('loss/overview',{'train_loss': loss}, self.global_step)
         
-        return {'loss': loss,'progress_bar': {'train_loss': loss},  'log': {'train_loss': loss}}
+        return {'loss': loss,'progress_bar': {'train_loss': loss}}
 
     def validation_step(self, batch, batch_nb):
-        masked_img, mask, image = batch
         
-        img_tensor = self.preprocess.normalize(image.type(torch.float))
-        mask_tensor = mask.type(torch.float).transpose(1, 3)
-        masked_img_tensor = self.preprocess.normalize(masked_img.type(torch.float))
-        
-        ls_fn = self.lossCompute.loss_total(mask_tensor, self.loss_factors)
-        output = self.forward(masked_img_tensor, mask_tensor)
-        loss, dict_losses = ls_fn(img_tensor, output)
-        
-        psnr = self.lossCompute.PSNR(img_tensor, output)
+        images = batch[0]["images"]
+        masks = batch[0]["masks"]
+        masked_images = masks*images
+    
+        ls_fn = self.lossCompute.loss_total(masks)
+        output = self.forward(masked_images, masks)
+        loss, dict_losses = ls_fn(images, output)
+
+        psnr = self.lossCompute.PSNR(images, output)
         if batch_nb == 0:
-            res = np.clip(self.preprocess.unnormalize(output).detach().cpu().numpy(),0,1)
-            original_img = np.clip(self.preprocess.unnormalize(masked_img_tensor).detach().cpu().numpy(),0,1)
+            res = np.clip(unnormalize(output.detach().cpu().numpy()),0,1)
+            original_img = np.clip(unnormalize(masked_images.detach().cpu().numpy()),0,1)
+            target_img = np.clip(unnormalize(images.detach().cpu().numpy()),0,1)
             combined_imgs = []
-            for i in range(image.shape[0]):
-                combined_img = np.concatenate((original_img[i], res[i], image[i].detach().cpu().numpy()), axis=1)
+            for i in range(images.shape[0]):
+                combined_img = np.concatenate((original_img[i], res[i], target_img[i]), axis=1)
                 combined_imgs.append(combined_img)
             combined_imgs = np.concatenate(combined_imgs)
             self.logger.experiment.add_image('images', combined_imgs, dataformats='HWC') 
@@ -112,36 +105,39 @@ class ImageInpaintingSystem(pl.LightningModule):
         self.logger.experiment.add_scalars('loss/overview',{'valid_loss': avg_loss}, self.global_step)
 
         tqdm_dict = {'valid_psnr': avg_psnr, 'val_loss': avg_loss}
-        return {'val_loss':avg_loss, 'progress_bar': tqdm_dict, 'log': tqdm_dict}
+
+        self.val_dataloader()[0].reset()
+        return {'val_loss':avg_loss, 'progress_bar': tqdm_dict}
     
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
     @pl.data_loader
     def train_dataloader(self):
-        mask_generator = MaskGenerator(self.hparams.mask_dir, self.hparams.height, self.hparams.width, invert_mask=self.hparams.invert_mask) 
-        dataset = ImagesDataset(self.hparams.train_dir, self.hparams.height, self.hparams.width, mask_generator)
-        dataloader = DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=True, num_workers=self.hparams.num_workers)
+        eii = ExternalInputIterator(self.hparams.train_dir, self.hparams.mask_dir, self.hparams.batch_size, isShuffle=True)
+        pipe = ExternalSourcePipeline(batch_size=self.hparams.batch_size, num_threads=self.hparams.num_workers, device_id = 0,
+            external_data = eii, exec_async=False, exec_pipelined=False)
+        dataloader = LightningDaliDataloader(pipe, eii.size, self.hparams.batch_size, last_batch_padded=False, fill_last_batch=True, output_map=["images", "masks"])
         return dataloader
     
+    def on_epoch_end(self):
+        self.train_dataloader().reset()
+
     @pl.data_loader
     def val_dataloader(self):
-        mask_generator = MaskGenerator(self.hparams.mask_dir, self.hparams.height, self.hparams.width, invert_mask=self.hparams.invert_mask) 
-        dataset = ImagesDataset(self.hparams.valid_dir, self.hparams.height, self.hparams.width, mask_generator)
-        dataloader = DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=False, num_workers=self.hparams.num_workers)
+        eii = ExternalInputIterator(self.hparams.valid_dir, self.hparams.mask_dir, self.hparams.batch_size, isShuffle=False)
+        pipe = ExternalSourcePipeline(batch_size=self.hparams.batch_size, num_threads=self.hparams.num_workers, device_id = 0,
+            external_data = eii, exec_async=False, exec_pipelined=False)
+        dataloader = LightningDaliDataloader(pipe, eii.size, self.hparams.batch_size, last_batch_padded=True, fill_last_batch=True, output_map=["images", "masks"])
         return dataloader
     
     @staticmethod
     def add_model_specific_args(parent_parser, root_dir):
         parser = ArgumentParser(parents=[parent_parser])
 
-        parser.add_argument('--height', type=int, default=256)
-        parser.add_argument('--width', type=int, default=256)
         parser.add_argument('--learning_rate', type=float, default=0.0002) 
-        parser.add_argument('--batch_size', default=2, type=int)
+        parser.add_argument('--batch_size', default=6, type=int)
         parser.add_argument('--num_workers', default=2, type=int)
-
-        parser.add_argument('--invert_mask', default=False, type=bool)
 
         parser.add_argument('--train_dir', type=str)
         parser.add_argument('--valid_dir', type=str)

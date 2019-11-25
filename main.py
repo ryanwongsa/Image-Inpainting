@@ -2,6 +2,8 @@ from lightning.image_inpainting_system import ImageInpaintingSystem
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from argparse import ArgumentParser
+from pytorch_lightning.logging import TestTubeLogger
+
 import os
 
 def main(hparams):
@@ -9,18 +11,22 @@ def main(hparams):
     Main training routine specific for this project
     :param hparams:
     """
-    if hparams.logs_dir is None:
-        model = ImageInpaintingSystem(hparams)
-    else:
-        model = ImageInpaintingSystem.load_from_metrics(
-            weights_path=hparams.logs_dir+"/checkpoints/"+ hparams.checkpoint_name,
-            tags_csv=hparams.logs_dir+'/meta_tags.csv'
+    logger = TestTubeLogger(
+        save_dir=hparams.save_path,
+        version=hparams.version_number 
+    )
+    if hparams.checkpoint_dir is not None:
+        model = ImageInpaintingSystem.load_from_checkpoint(
+            checkpoint_path=hparams.checkpoint_dir,
         )
+    else:
+        model = ImageInpaintingSystem(hparams)
 
     num_gpus = 1
     
     trainer = Trainer(
         gpus=1,
+        logger=logger,
         train_percent_check=hparams.train_percent_check, 
         val_check_interval=hparams.val_check_interval,
         use_amp=hparams.use_16bit,
@@ -47,13 +53,14 @@ if __name__ == '__main__':
     )
     
     parent_parser.add_argument(
-        '--logs_dir',
+        '--checkpoint_dir',
         type=str
     )
-    
+
     parent_parser.add_argument(
-        '--checkpoint_name',
-        type=str
+        '--version_number',
+        type=int,
+        default=None
     )
     
     parent_parser.add_argument(
