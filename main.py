@@ -15,6 +15,7 @@ def main(hparams):
         save_dir=hparams.save_path,
         version=hparams.version_number 
     )
+    
     if hparams.checkpoint_dir is not None:
         model = ImageInpaintingSystem.load_from_checkpoint(
             checkpoint_path=hparams.checkpoint_dir,
@@ -23,7 +24,7 @@ def main(hparams):
         model = ImageInpaintingSystem(hparams)
 
     num_gpus = 1
-    
+
     trainer = Trainer(
         gpus=1,
         logger=logger,
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     parent_parser.add_argument(
         '--val_check_interval',
         type=float,
-        default=0.05,
+        default=1.0,
     )
     
     parent_parser.add_argument(
