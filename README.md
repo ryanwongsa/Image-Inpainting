@@ -24,6 +24,8 @@ Currently results shows training done on the Goolge Landmark v2 Dataset on a sin
 - tv loss is very low at the moment, might need to increase the scaling factor.
 - highest loss is style out.
 
+*UPDATE (22/12/2019)*: Trained for around 36 hours on P100 GPU, results not shown yet as training put on hold. Currently working on [DeepFake Detection Challenge](https://www.kaggle.com/c/deepfake-detection-challenge)
+
 ![Example Images](res/sample_training.JPG)
 
 ### Validation Set
