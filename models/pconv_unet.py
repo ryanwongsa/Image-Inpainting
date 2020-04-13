@@ -37,7 +37,6 @@ class PConvUNet(nn.Module):
         e_conv7, e_mask7 = self.encoder7(e_conv6, e_mask6)
         e_conv8, e_mask8 = self.encoder8(e_conv7, e_mask7)
         
-        
         d_conv9, d_mask9   = self.decoder1(e_conv8, e_mask8, e_conv7, e_mask7)
         d_conv10, d_mask10 = self.decoder2(d_conv9, d_mask9, e_conv6, e_mask6)
         d_conv11, d_mask11 = self.decoder3(d_conv10, d_mask10, e_conv5, e_mask5)
