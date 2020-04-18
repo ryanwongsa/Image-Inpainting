@@ -29,11 +29,11 @@ Currently results shows training done on the Goolge Landmark v2 Dataset on a sin
 - highest loss is style out.
 
 
-![Example Images](res/sample_training.JPG)
+![Example Images](images/sample_training.JPG)
 
 ### Validation Set
 
-![Example Images](res/individualImage.png)
+![Example Images](images/individualImage.png)
 
 > Currently optimizing training and hyperparameters before training for full duration longer.
 
