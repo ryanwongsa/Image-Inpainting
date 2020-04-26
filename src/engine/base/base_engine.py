@@ -12,6 +12,7 @@ import os
 import cProfile
 from ignite.engine import Events, Engine
 from ignite.handlers import Checkpoint
+from ignite.utils import setup_logger
 
 class BaseEngine(object):
     def __init__(self, hparams):
@@ -92,6 +93,9 @@ class BaseEngine(object):
         
         if self.scheduler:
             self.trainer.add_event_handler(Events.ITERATION_STARTED, self.scheduler)
+
+        self.trainer.logger = setup_logger("trainer")
+        self.evaluator.logger = setup_logger("evaluator")
     
     def train(self, run_params):
         self.trainer.run(self.train_loader,**run_params)
